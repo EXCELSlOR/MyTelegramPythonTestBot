@@ -13,20 +13,24 @@ def welcome(message):
 def get_user_name(message):
     chat_id = message.chat.id
     name = message.text
-    keyboard = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-    keyboard.add(telebot.types.KeyboardButton(text='Я тоже!'))
-    keyboard.add(telebot.types.KeyboardButton(text='Мы уже знакомы...'))
+    keyboard = telebot.types.InlineKeyboardMarkup()
+    keyboard.add(telebot.types.InlineKeyboardButton(
+        text='Я тоже!', callback_data='me_too'),
+        telebot.types.InlineKeyboardButton(
+            text='Мы уже знакомы...', callback_data='already_known'))
     bot.send_message(chat_id, f"Рад знакомству, {name}", reply_markup=keyboard)
-    bot.register_next_step_handler(message, send_reply_message)
 
 
-def send_reply_message(message):
-    chat_id = message.chat.id
-    message_text = message.text
-    if message_text == 'Я тоже!':
-        bot.send_message(chat_id, 'Приятно слышать')
-    else:
-        bot.send_message(chat_id, 'Прости, не узнал тебя. Богатым будешь!')
+@bot.callback_query_handler(func=lambda call: call.data == 'me_too')
+def me_too(call):
+    chat_id = call.message.chat.id
+    bot.send_message(chat_id, 'Приятно слышать!')
+
+
+@bot.callback_query_handler(func=lambda call: call.data == 'already_known')
+def already_known(call):
+    chat_id = call.message.chat.id
+    bot.send_message(chat_id, 'Прости, не узнал тебя. Богатым будешь!')
 
 
 bot.infinity_polling()
