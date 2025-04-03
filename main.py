@@ -1,36 +1,40 @@
 import telebot
+import parser
+from parser import QuizParser
 
+parser = QuizParser()
 bot = telebot.TeleBot('8181700980:AAFw-EsOg3F0CUdkyVETdLS5LqKMQbTOvew')
 
 
 @bot.message_handler(commands=['start'])
 def welcome(message):
     chat_id = message.chat.id
-    bot.send_message(chat_id, "Привет! Как тебя зовут?")
-    bot.register_next_step_handler(message, get_user_name)
+    keyboard = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+    keyboard.add(telebot.types.KeyboardButton(text='Начать'))
+    bot.send_message(chat_id, 'Для начала викторины нажмите кнопку "Начать"', reply_markup=keyboard)
+    bot.register_next_step_handler(message, show_question)
 
 
-def get_user_name(message):
+def show_question(message):
     chat_id = message.chat.id
-    name = message.text
-    keyboard = telebot.types.InlineKeyboardMarkup()
-    keyboard.add(telebot.types.InlineKeyboardButton(
-        text='Я тоже!', callback_data='me_too'),
-        telebot.types.InlineKeyboardButton(
-            text='Мы уже знакомы...', callback_data='already_known'))
-    bot.send_message(chat_id, f"Рад знакомству, {name}", reply_markup=keyboard)
+    result = parser.get_new_question()
+    question_id = result['question_id']
+    question = result['question_text']
+    answers = result['answers']
+    keyboard = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+    for i in range(len(answers)):
+        keyboard.add(telebot.types.KeyboardButton(text=answers[i]))
+    bot.send_message(chat_id, f"Вопрос №{question_id}: {question}", reply_markup=keyboard)
+    bot.register_next_step_handler(message, get_answer)
 
 
-@bot.callback_query_handler(func=lambda call: call.data == 'me_too')
-def me_too(call):
-    chat_id = call.message.chat.id
-    bot.send_message(chat_id, 'Приятно слышать!')
-
-
-@bot.callback_query_handler(func=lambda call: call.data == 'already_known')
-def already_known(call):
-    chat_id = call.message.chat.id
-    bot.send_message(chat_id, 'Прости, не узнал тебя. Богатым будешь!')
-
+def get_answer(message):
+    chat_id = message.chat.id
+    user_answer = message.text
+    result = parser.check_answer(user_answer)
+    correct_answer = result['correct_answer']
+    message_text = "Верно" if result['correct'] else "Неверно"
+    bot.send_message(chat_id, f"{message_text}! Правильный ответ: {correct_answer}")
+    bot.register_next_step_handler(message, show_question)
 
 bot.infinity_polling()
