@@ -4,6 +4,8 @@ from bs4 import BeautifulSoup
 
 class QuizParser:
     def __init__(self):
+        self.all_answers = 0
+        self.right_answers = 0
         self.base_url = "https://baza-otvetov.ru/quiz"
         self.session = requests.Session()
         # Устанавливаем заголовки, чтобы имитировать браузер
@@ -50,21 +52,24 @@ class QuizParser:
             result_tag = soup.find('h3', style=True)
             if not result_tag:
                 return {'correct': False, 'message': 'Не удалось определить результат'}
+            self.all_answers += 1
+            result_tag = soup.find('h3', style=True)
             result_text = result_tag.get_text(strip=True)
             # Проверяем, правильный ли ответ
+            correct = None
             if 'Правильно!' in result_text:
                 correct_answer = result_tag.get_text('\n', strip=True).split('\n')[-1]
-                return {
-                    'correct': True,
-                    'correct_answer': correct_answer
-                }
+                self.right_answers += 1
+                correct = True
             else:
+                correct = False
                 correct_answer_tag = soup.find('span', style="color:#339966")
                 correct_answer = correct_answer_tag.get_text(strip=True)
-                return {
-                    'correct': False,
-                    'correct_answer': correct_answer
-                }
+            return {
+                'correct': correct,
+                'correct_answer': correct_answer,
+                'statistics': f'Правильных ответов: {self.right_answers} из {self.all_answers}'
+            }
         except Exception as e:
             print(f"Ошибка при проверке ответа: {e}")
             return {'correct': False, 'message': f'Ошибка: {e}'}

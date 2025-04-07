@@ -3,7 +3,7 @@ import parser
 from parser import QuizParser
 
 parser = QuizParser()
-bot = telebot.TeleBot('8181700980:AAFw-EsOg3F0CUdkyVETdLS5LqKMQbTOvew')
+bot = telebot.TeleBot('8181700980:AAHIj3zK-LzWr-9F5TS1z6xCFL4HM3VrhT0')
 
 
 @bot.message_handler(commands=['start'])
@@ -30,11 +30,15 @@ def show_question(message):
 
 def get_answer(message):
     chat_id = message.chat.id
-    user_answer = message.text
-    result = parser.check_answer(user_answer)
+    result = parser.check_answer(message.text)
     correct_answer = result['correct_answer']
+    statistics = result['statistics']
+    keyboard = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+    keyboard.add(telebot.types.KeyboardButton(text='Следующий вопрос'))
     message_text = "Верно" if result['correct'] else "Неверно"
-    bot.send_message(chat_id, f"{message_text}! Правильный ответ: {correct_answer}")
+    bot.send_message(chat_id, f"{message_text}! Правильный ответ: {correct_answer}\n{statistics}",
+                     reply_markup=keyboard)
     bot.register_next_step_handler(message, show_question)
+
 
 bot.infinity_polling()
